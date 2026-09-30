@@ -13,14 +13,14 @@ border    = 12;    // cover overlap on lithophane face -> viewable dia = 200 - 2
 
 // ---- Fit / strength tuning ----
 clr       = 0.3;   // radial clearance per side (raise to 0.4 if too tight)
-wall      = 2.4;   // skirt wall thickness
+wall      = 1.9;   // skirt wall thickness (outer dia = litho_d + 2*clr + 2*wall = 204.4)
+bezel_h   = 8.5;   // side bezel stops here; above this only the clip arms remain
 face_t    = 2.0;   // front ring thickness (light shines through the lithophane, not this)
 overhang  = 3.0;   // skirt extends this far past the back of the light
 
 // ---- Clips ----
 n_clips   = 3;
 clip_w    = 14;    // arm width (mm, along the circumference)
-slot_w    = 1.6;   // gap either side of the arm so it can flex
 hook_in   = 1.3;   // how far the hook reaches in behind the light's back edge
 hook_h    = 2.6;   // hook height
 clip_start= 90;    // angle of first clip (deg)
@@ -37,7 +37,6 @@ z_light   = face_t + litho_t + 0.2;      // light body starts here (0.2 slack fo
 z_back    = z_light + light_h;           // back of the light
 total_h   = z_back + overhang;
 arm_a     = clip_w  / pocket_r * 180/PI; // arm angle
-slot_a    = slot_w  / pocket_r * 180/PI;
 
 module ring(r_in, r_out, z0, z1, a=360) {
     translate([0,0,z0])
@@ -61,30 +60,16 @@ module clip_hook() {
     rotate_extrude(angle=arm_a) hook_profile();
 }
 
-module body() {
-    difference() {
-        union() {
-            // front ring + skirt
-            ring(open_r, outer_r, 0, face_t);
-            ring(pocket_r, outer_r, 0, total_h);
-        }
-        // opening is already excluded (ring starts at open_r); lithophane pocket is the bore
-    }
-}
-
 module cover() {
-    difference() {
-        body();
-        // flex slots around each clip
-        for (i=[0:n_clips-1]) {
-            a0 = clip_start + i*360/n_clips - arm_a/2;
-            rotate([0,0,a0 - slot_a]) ring(pocket_r-1, outer_r+1, z_light+1, total_h+1, slot_a);
-            rotate([0,0,a0 + arm_a]) ring(pocket_r-1, outer_r+1, z_light+1, total_h+1, slot_a);
-        }
-    }
-    // hooks on the arm tips
+    // front ring + short side bezel (stops where the clips begin)
+    ring(open_r, outer_r, 0, face_t);
+    ring(pocket_r, outer_r, 0, bezel_h);
+    // clip arms + hooks: the only parts that rise above the bezel
     for (i=[0:n_clips-1])
-        rotate([0,0,clip_start + i*360/n_clips - arm_a/2]) clip_hook();
+        rotate([0,0,clip_start + i*360/n_clips - arm_a/2]) {
+            ring(pocket_r, outer_r, bezel_h - 0.01, total_h, arm_a);
+            clip_hook();
+        }
 }
 
 cover();
