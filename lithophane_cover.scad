@@ -12,17 +12,18 @@ litho_t   = 5;     // lithophane disc thickness
 border    = 12;    // cover overlap on lithophane face -> viewable dia = 200 - 2*12 = 176
 
 // ---- Fit / strength tuning ----
-clr       = 0.3;   // radial clearance per side (raise to 0.4 if too tight)
-wall      = 1.9;   // skirt wall thickness (outer dia = litho_d + 2*clr + 2*wall = 204.4)
+clr       = 0.15;  // radial clearance per side (raise to 0.2-0.3 if the lithophane is too tight)
+wall      = 1.5;   // skirt wall thickness (outer dia = litho_d + 2*clr + 2*wall = 203.3)
 bezel_h   = 8.5;   // side bezel stops here; above this only the clip arms remain
 face_t    = 2.0;   // front ring thickness (light shines through the lithophane, not this)
-overhang  = 3.0;   // skirt extends this far past the back of the light
 
 // ---- Clips ----
 n_clips   = 3;
 clip_w    = 14;    // arm width (mm, along the circumference)
-hook_in   = 1.3;   // how far the hook reaches in behind the light's back edge
-hook_h    = 2.6;   // hook height
+hook_in   = 2.8;   // how far the hook tip reaches in from the arm's inner face
+hook_flat = 1.8;   // flat (horizontal) part of the catch = the longest unsupported overhang;
+                   // beyond it the underside slopes at 45 deg so it prints without supports
+tip_h     = 0.6;   // vertical face at the hook tip
 clip_start= 90;    // angle of first clip (deg)
 
 // Show a ghost lithophane + light for visualisation only (never exported)
@@ -35,7 +36,9 @@ open_r    = litho_d/2 - border;          // 88
 z_litho   = face_t;                      // lithophane sits on top of the front ring
 z_light   = face_t + litho_t + 0.2;      // light body starts here (0.2 slack for litho)
 z_back    = z_light + light_h;           // back of the light
-total_h   = z_back + overhang;
+zc        = z_back + 0.2;                // catch surface, just behind the light
+hook_h    = (hook_in - hook_flat) + tip_h + hook_in;  // 45deg underside + tip + 45deg lead-in
+total_h   = zc + hook_h;
 arm_a     = clip_w  / pocket_r * 180/PI; // arm angle
 
 module ring(r_in, r_out, z0, z1, a=360) {
@@ -45,13 +48,13 @@ module ring(r_in, r_out, z0, z1, a=360) {
 }
 
 module hook_profile() {
-    // (radius, z) polygon: flat catch underneath, 45deg lead-in on top
+    // (radius, z) polygon: flat catch, 45deg sloped underside at the tip, 45deg lead-in on top
     r = pocket_r;
-    zc = z_back + 0.2;                     // catch surface, just behind the light
     polygon([
-        [r - 0.01, zc],
-        [r - hook_in, zc],
-        [r - hook_in, zc + hook_h - hook_in - 0.0],
+        [r + 0.01, zc],
+        [r - hook_flat, zc],
+        [r - hook_in, zc + (hook_in - hook_flat)],
+        [r - hook_in, zc + (hook_in - hook_flat) + tip_h],
         [r + 0.01, zc + hook_h]
     ]);
 }
